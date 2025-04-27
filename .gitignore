@@ -38,3 +38,9 @@ debates/
 *.log
 *.json
 !package.json
+.history/
+.cache/
+web-vue/node_modules/
+debates/
+speech_output/
+*.mp3
