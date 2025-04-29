@@ -1,7 +1,7 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response,Blueprint
 import requests
 # 初始化 Flask 应用
-app = Flask(__name__)
+ttv = Blueprint('ttv',__name__)
 
 # 固定的 API 密钥和请求头
 API_URL = "https://api.siliconflow.cn/v1/audio/speech"
@@ -11,7 +11,7 @@ HEADERS = {
 }
 
 # 定义生成语音的路由和方法
-@app.route('/generate_speech', methods=['POST'])
+@ttv.route('/generate_speech', methods=['POST'])
 def generate_speech():
     """
     生成语音接口。
