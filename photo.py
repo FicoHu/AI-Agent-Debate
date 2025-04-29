@@ -96,8 +96,8 @@ def signV4Request(access_key, secret_key, service, req_query, req_body):
 
 if __name__ == "__main__":
     # 请求凭证，从访问控制申请
-    access_key = 'AKLTZTczNTZiMGE3ZDBkNGQxMTk2MGJmOTA4MDA1Y2QxY2M'
-    secret_key = 'TkRGalptRTNZemRoWWpjd05HSmtZV0psTW1NNVptVXhaalF4T0dJeE9USQ=='
+    access_key = '********************'
+    secret_key = 'Tk*****************'
 
     # 请求Query，按照接口文档中填入即可
     query_params = {
