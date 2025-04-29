@@ -11,7 +11,7 @@ HEADERS = {
 }
 
 # 定义生成语音的路由和方法
-@ttv.route('/generate_speech', methods=['POST'])
+@ttv.route('/api/generate_speech', methods=['POST'])
 def generate_speech():
     """
     生成语音接口。

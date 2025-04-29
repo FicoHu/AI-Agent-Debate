@@ -6,6 +6,9 @@ import datetime
 import hashlib
 import hmac
 import requests
+from flask import Flask, request, jsonify,Blueprint
+
+photo = Blueprint('photo',__name__)
 
 method = 'POST'
 host = 'visual.volcengineapi.com'
@@ -92,12 +95,17 @@ def signV4Request(access_key, secret_key, service, req_query, req_body):
         # 使用 replace 方法将 \u0026 替换为 &
         resp_str = r.text.replace("\\u0026", "&")
         print(f'Response body: {resp_str}\n')
+        return json.loads(resp_str)
 
-
-if __name__ == "__main__":
+@photo.route('/api/generate_photo', methods=['GET'])
+def generate_photo():
+    # 获取URL参数
+    theme = request.args.get('theme')
+    if not theme:
+        return jsonify({"error": "Missing theme parameter"}), 400
     # 请求凭证，从访问控制申请
-    access_key = '********************'
-    secret_key = 'Tk*****************'
+    access_key = 'AKLTZTczNTZiMGE3ZDBkNGQxMTk2MGJmOTA4MDA1Y2QxY2M'
+    secret_key = 'TkRGalptRTNZemRoWWpjd05HSmtZV0psTW1NNVptVXhaalF4T0dJeE9USQ=='
 
     # 请求Query，按照接口文档中填入即可
     query_params = {
@@ -108,11 +116,12 @@ if __name__ == "__main__":
 
     # 请求Body，按照接口文档中填入即可
     body_params = {
-        "return_url":"true",
+        "return_url": True,
         "req_key": "jimeng_high_aes_general_v21_L",
-        "prompt": "生成一张辩论赛海报，辩论赛主题是京东外卖与美团外卖谁能胜出，正方是京东外卖，反方是美团外卖，海报上要配有辩论赛主题文字字样和双方的队伍名称"
+        "prompt": f"生成一张辩论赛海报，辩论赛主题是\n{theme}\n，海报上要配有辩论赛主题文字字样和双方的队伍名称"
     }
     formatted_body = json.dumps(body_params)
 
-    signV4Request(access_key, secret_key, service,
+    return signV4Request(access_key, secret_key, service,
                   formatted_query, formatted_body)
+
