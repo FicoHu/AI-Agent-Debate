@@ -83,6 +83,9 @@ install_api_deps() {
     pip install -r requirements.txt
     pip install -r requirements_api.txt
     
+    # 安装额外需要的依赖
+    pip install aiohttp
+    
     if [ $? -eq 0 ]; then
         info "API依赖安装成功"
     else
