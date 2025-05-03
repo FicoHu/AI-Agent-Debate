@@ -1,5 +1,6 @@
 from flask import Flask
-from debateck import debateck
+# from debateck import debateck
+from debates import debateck
 from ttv import ttv
 from debatefromnews import debatefromnews
 from photo import photo
