@@ -1,20 +1,26 @@
-from flask import Flask, request, jsonify,Blueprint
+from datetime import datetime
+import json
+import uuid
+from flask import Flask, request, jsonify, Blueprint
 import requests
 from bs4 import BeautifulSoup
-
-debatefromnews = Blueprint('debatefromnews',__name__)
+from debates import add_debate
+from  photo import get_photo
+debatefromnews = Blueprint('debatefromnews', __name__)
 
 # 定义目标API的固定参数
-API_URL = "https://maas-cn-southwest-2.modelarts-maas.com/v1/infers/8a062fd4-7367-4ab4-a936-5eeb8fb821c4/v1/chat/completions"
+API_URL = "https://api.modelarts-maas.com/v1/chat/completions"
 HEADERS = {
     "Content-Type": "application/json",
     "Authorization": "Bearer YOVu9vLFu3JG5Pl7ruiHud2trqaUNHojAcJVMFcfSUmOhBIJEMWW5Dui9oB1LIImZFSS2tszw51jTDBoqO8Ppg"
 }
 
-@debatefromnews.route('/api/generate_debate', methods=['GET'])
+
+@debatefromnews.route('/api/generate_debate', methods=['POST'])
 def generate_debate():
     # 获取URL参数
-    target_url = request.args.get('url')
+    data = request.json
+    target_url = data['url']
     if not target_url:
         return jsonify({"error": "Missing URL parameter"}), 400
 
@@ -50,9 +56,9 @@ def generate_debate():
 
     try:
         # 构造请求数据\
-        jsontype="{\"debate_topic\":\"辩论赛主题\",\"pros\":{\"team\":\"正反\",\"argument\":\"正反立场\"},\"cons\":{\"team\":\"反方\",\"argument\":\"反方立场\"},\"rounds\":[{\"round\":1,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"},{\"round\":2,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"}]}"
+        jsontype = "{\"topic\":\"辩论赛主题\",\"pros\":{\"team\":\"正反\",\"argument\":\"正反立场\"},\"cons\":{\"team\":\"反方\",\"argument\":\"反方立场\"},\"rounds\":[{\"round\":1,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"},{\"round\":2,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"}]}"
         payload = {
-            "model": "DeepSeek-R1",
+            "model": "DeepSeek-V3",
             "messages": [
                 {
                     "role": "user",
@@ -66,7 +72,36 @@ def generate_debate():
         # 调用目标API
         api_response = requests.post(API_URL, headers=HEADERS, json=payload)
         api_response.raise_for_status()
-        return jsonify(api_response.json())
+        # 提取content字段
+        content = api_response.json()['choices'][0]['message']['content']
+
+        # 输出结果
+        print(content)
+
+        # 如果需要提取content中的json内容（去除多余的反斜杠和代码块标记）
+        try:
+            # 去除代码块标记和多余空格
+            json_str = content.strip().replace('```json\n', '').replace('\n```', '')
+            # 转换json字符串为Python对象
+            parsed_json = json.loads(json_str)
+            print("\n解析后的JSON对象:")
+            print(json.dumps(parsed_json, indent=2, ensure_ascii=False))
+            parsed_json["url"] = target_url
+            parsed_json["id"] = str(uuid.uuid4())
+            parsed_json["view_count"] = 0
+            parsed_json["created_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            parsed_json["status"] = 'ongoing'
+            parsed_json["schedule"]={
+                "time" :  datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "location": "线上直播厅"
+            }
+            # 海报
+            parsed_json["poster"] = get_photo(parsed_json["topic"])
+
+        except json.JSONDecodeError as e:
+            print(f"JSON解析错误: {e}")
+        add_debate(parsed_json)
+        return jsonify(parsed_json)
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"API request failed: {str(e)}"}), 500
     except ValueError:

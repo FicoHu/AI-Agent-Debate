@@ -125,3 +125,33 @@ def generate_photo():
     return signV4Request(access_key, secret_key, service,
                   formatted_query, formatted_body)
 
+def get_photo(theme: str):
+    # 获取URL参数
+    if not theme:
+        return jsonify({"error": "Missing theme parameter"}), 400
+    # 请求凭证，从访问控制申请
+    access_key = 'AKLTZTczNTZiMGE3ZDBkNGQxMTk2MGJmOTA4MDA1Y2QxY2M'
+    secret_key = 'TkRGalptRTNZemRoWWpjd05HSmtZV0psTW1NNVptVXhaalF4T0dJeE9USQ=='
+
+    # 请求Query，按照接口文档中填入即可
+    query_params = {
+        'Action': 'CVProcess',
+        'Version': '2022-08-31',
+    }
+    formatted_query = formatQuery(query_params)
+
+    # 请求Body，按照接口文档中填入即可
+    body_params = {
+        "return_url": True,
+        "req_key": "jimeng_high_aes_general_v21_L",
+        "prompt": f"生成一张辩论赛海报，辩论赛主题是\n{theme}\n，海报上要配有辩论赛主题文字字样和双方的队伍名称"
+    }
+    formatted_body = json.dumps(body_params)
+    formatted_body = signV4Request(access_key, secret_key, service,
+                  formatted_query, formatted_body)
+    first_image_url = formatted_body["data"]["image_urls"][0]
+
+    return first_image_url
+
+if __name__ == '__main__':
+    get_photo("京东大战美团")

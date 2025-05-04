@@ -141,17 +141,8 @@ def get_debates():
                 "page": page,
                 "per_page": per_page,
                 "debates": [
-                    {
-                        "id": d["id"],
-                        "topic": d["topic"],
-                        "url": d["url"],
-                        "pros_team": d["pros"]["team"],
-                        "cons_team": d["cons"]["team"],
-                        "poster": d["poster"],
-                        "schedule_time": d["schedule"]["time"],
-                        "status": d["status"],
-                        "view_count": d["view_count"]
-                    } for d in paginated
+                    d
+                    for d in paginated
                 ]
             }
         })
@@ -159,9 +150,10 @@ def get_debates():
         return jsonify({"code": 500, "message": str(e)}), 500
 
 
-@debateck.route('/api/debate/<debate_id>', methods=['GET'])
-def get_debate_detail(debate_id):
+@debateck.route('/api/debate', methods=['GET'])
+def get_debate_detail():
     """获取辩论详情"""
+    debate_id = request.args.get('debate_id')
     try:
         target_debate = next((d for d in DEBATES if d['id'] == debate_id), None)
         if not target_debate:
@@ -173,29 +165,7 @@ def get_debate_detail(debate_id):
         return jsonify({
             "code": 200,
             "message": "成功",
-            "data": {
-                "id": target_debate["id"],
-                "topic": target_debate["topic"],
-                "url": target_debate["url"],
-                "details": {
-                    "pros": {
-                        "team": target_debate["pros"]["team"],
-                        "argument": target_debate["pros"]["argument"],
-                        "members": []
-                    },
-                    "cons": {
-                        "team": target_debate["cons"]["team"],
-                        "argument": target_debate["cons"]["argument"],
-                        "members": []
-                    }
-                },
-                "poster": target_debate["poster"],
-                "schedule": target_debate["schedule"],
-                "status": target_debate["status"],
-                "view_count": target_debate["view_count"],
-                "created_at": target_debate["created_at"],
-                "related": get_related_debates(target_debate["topic"])
-            }
+            "data": target_debate
         })
     except Exception as e:
         return jsonify({"code": 500, "message": str(e)}), 500
@@ -258,7 +228,8 @@ def create_debate():
             },
             "status": data["status"],
             "view_count": 0,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "rounds": data["rounds"]
         }
 
         # 添加并持久化
