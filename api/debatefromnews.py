@@ -56,13 +56,14 @@ def generate_debate():
 
     try:
         # 构造请求数据\
-        jsontype = "{\"topic\":\"辩论赛主题\",\"pros\":{\"team\":\"正反\",\"argument\":\"正反立场\"},\"cons\":{\"team\":\"反方\",\"argument\":\"反方立场\"},\"rounds\":[{\"round\":1,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"},{\"round\":2,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"}]}"
+        # jsontype = "{\"topic\":\"辩论赛主题\",\"pros\":{\"team\":\"正反\",\"argument\":\"正反立场\"},\"cons\":{\"team\":\"反方\",\"argument\":\"反方立场\"},\"rounds\":[{\"round\":1,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"},{\"round\":2,\"pro_position\":\"正反论点\",\"pro_evidence\":\"正反论点支持证据\",\"con_position\":\"反方论点\",\"con_evidence\":\"反方论点支持证据\"}]}"
+        jsontype = "{\"topic\":\"辩论赛主题\",\"pros\":{\"team\":\"正反\",\"argument\":\"正反立场\"},\"cons\":{\"team\":\"反方\",\"argument\":\"反方立场\"},\"rounds\":[{\"round\":1,\"pro_position\":\"正反论点论据1\",\"con_position\":\"反方论点论据1\",\"emcee\":\"主持人话术1\"},{\"round\":2,\"pro_position\":\"正反论点论据2\",\"con_position\":\"反方论点论据2\",\"emcee\":\"主持人话术2\"]}"
         payload = {
             "model": "DeepSeek-V3",
             "messages": [
                 {
                     "role": "user",
-                    "content": f"网页HTML内容：\n{html_content}\n请根据这个网页内容生成一个辩论赛主题，并根据正反双方的立场，生成10个辩论轮次，输出格式为标准化的json数据，不要输出任何多余的文本，每个轮次包含一个正方论点，一个反方论点，一个正方论点支持证据，一个反方论点支持证据。标准的json格式如下:\n{jsontype}\n"
+                    "content": f"网页HTML内容：\n{html_content}\n请根据这个网页内容生成一个辩论赛主题，并根据正反双方的立场，生成10个辩论轮次，输出格式为标准化的json数据，不要输出任何多余的文本，每个轮次包含一个正方论点，一个反方论点，一个正方论点支持证据，一个反方论点支持证据，论点和论据放在一个字段中且要口语化，并且每个轮次要有一个主持人话术。。标准的json格式如下:\n{jsontype}\n"
                 }
             ],
             "stream": False,
