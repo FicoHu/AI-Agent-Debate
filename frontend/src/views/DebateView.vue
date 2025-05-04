@@ -58,7 +58,7 @@
           <!-- 主持人消息 -->
           <div class="chat-message host-message" v-if="message.type === 'host'" v-show="message.displayContent.length > 0">
             <div class="avatar host-avatar">主</div>
-            <div class="message-content host-content">
+            <div class="message-content">
               <div class="message-bubble">
                 {{ message.displayContent }}
               </div>
@@ -81,6 +81,7 @@
 
 <script>
 import BottomNavBar from '../components/BottomNavBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'DebateView',
@@ -96,7 +97,7 @@ export default {
         redStance: '单身狗',
         bluePlayerType: '保守型',
         redPlayerType: '激进型',
-        useVoice: '是'
+        useVoice: true
       },
       debateRounds: 15,
       currentRound: 4,
@@ -163,8 +164,12 @@ export default {
   },
   methods: {
     initializeDebate() {
-      // 如果没有保存的辩论信息，使用默认值
-      if (!this.debateInfo) {
+      // 先从本地存储获取辩论信息
+      const savedDebateInfo = localStorage.getItem('debateInfo');
+      if (savedDebateInfo) {
+        this.debateInfo = JSON.parse(savedDebateInfo);
+      } else {
+        // 如果没有保存的辩论信息，使用默认值
         this.debateInfo = {
           topic: { id: 0, title: '结婚还是做单身狗', description: '' },
           selectedTeam: 'blue',
@@ -176,10 +181,42 @@ export default {
         };
       }
       
-      // 确保消息数组被正确初始化
-      if (!this.messages || this.messages.length === 0) {
-        // 使用data中预定义的messages数组
-        // 注意：这里不需要重新赋值，因为data中已经定义了默认值
+      // 从 API 获取辩论数据
+      this.fetchDebateData();
+    },
+    
+    // 从 API 获取辩论数据
+    async fetchDebateData() {
+      try {
+        // API基础URL，生产环境中应该使用实际的后端地址
+        const apiBaseUrl = 'http://localhost:8001';
+        
+        // 请求辩论视图数据
+        const response = await axios.get(`${apiBaseUrl}/debate_view/data`);
+        
+        if (response.data) {
+          // 更新辩论信息
+          this.debateInfo = response.data.debateInfo || this.debateInfo;
+          this.debateRounds = response.data.debateRounds || this.debateRounds;
+          this.currentRound = response.data.currentRound || this.currentRound;
+          
+          // 更新消息列表
+          if (response.data.messages && response.data.messages.length > 0) {
+            this.messages = response.data.messages;
+          }
+          
+          // 保存辩论信息到本地存储
+          localStorage.setItem('debateInfo', JSON.stringify(this.debateInfo));
+          
+          console.log('辩论数据获取成功', response.data);
+        }
+      } catch (error) {
+        console.error('获取辩论数据失败:', error);
+        // 如果获取数据失败，使用默认数据
+        if (!this.messages || this.messages.length === 0) {
+          // 使用data中预定义的messages数组
+          // 注意：这里不需要重新赋值，因为data中已经定义了默认值
+        }
       }
     },
     // 启动打字机效果
@@ -244,6 +281,32 @@ export default {
     },
     navigateTo(path) {
       this.$router.push(path);
+    },
+    
+    // 保存辩论信息到服务器
+    async saveDebateInfo() {
+      try {
+        const apiBaseUrl = 'http://localhost:8001';
+        
+        // 请求保存辩论信息
+        const response = await axios.post(`${apiBaseUrl}/debate_view/save`, {
+          debateInfo: this.debateInfo,
+          debateRounds: this.debateRounds,
+          currentRound: this.currentRound,
+          messages: this.messages
+        });
+        
+        if (response.data && response.data.success) {
+          console.log('辩论信息保存成功', response.data);
+          return true;
+        } else {
+          console.error('辩论信息保存失败', response.data);
+          return false;
+        }
+      } catch (error) {
+        console.error('辩论信息保存失败:', error);
+        return false;
+      }
     }
   }
 }
