@@ -51,7 +51,7 @@ def get_sample_debate_data() -> Dict[str, Any]:
             "redStance": "单身狗",
             "bluePlayerType": "保守型",
             "redPlayerType": "激进型",
-            "useVoice": true
+            "useVoice": True
         },
         "debateRounds": 15,
         "messages": [

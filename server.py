@@ -32,7 +32,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(router)
-app.include_router(debate_view_router, prefix="/debate_view", tags=["debate_view"])
+app.include_router(debate_view_router)  # 路由器已经定义了前缀，不需要再添加
 
 if __name__ == "__main__":
     # 强制使用端口8001
