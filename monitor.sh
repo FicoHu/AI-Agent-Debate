@@ -24,6 +24,20 @@ if [ ! -d "$PROJECT_PATH" ]; then
     log "仓库克隆成功"
 fi
 
+# 检查Python服务器是否在运行
+check_python_server() {
+    if ! pgrep -f "python.*server\.py" > /dev/null; then
+        log "检测到Python服务器未运行，正在启动..."
+        cd "$PROJECT_PATH"
+        nohup python3 server.py > "$PROJECT_PATH/server.log" 2>&1 &
+        if [ $? -eq 0 ]; then
+            log "Python服务器启动成功"
+        else
+            log "Python服务器启动失败"
+        fi
+    fi
+}
+
 # 拉取最新代码
 pull_latest_code() {
     log "正在拉取最新代码..."
@@ -58,6 +72,7 @@ check_and_start_dev_server() {
 # 主循环
 while true; do
     pull_latest_code
+    check_python_server      # 检查Python服务器是否在运行
     check_and_start_dev_server
     log "等待1分钟后再次检查..."
     sleep 60
