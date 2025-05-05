@@ -49,6 +49,7 @@
 import BottomNavBar from '../components/BottomNavBar.vue';
 import MiniPlayer from '../components/MiniPlayer.vue';
 import axios from 'axios';
+import apiConfig from '../config/api.js';
 
 export default {
   name: 'HotDebatesView',
@@ -73,7 +74,7 @@ created() {
   methods: {
     fetchDebates() {
   this.loading = true;
-  axios.get(`http://localhost:9000/api/debates?page=${this.page}&per_page=${this.per_page}`)
+  axios.get(`${apiConfig.getUrl(apiConfig.endpoints.debates)}?page=${this.page}&per_page=${this.per_page}`)
     .then(response => {
       if (response.data.code === 200) {
         this.debates = response.data.data.debates.map(debate => ({
