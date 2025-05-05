@@ -6,7 +6,6 @@ import AddDebateTopic from '../views/AddDebateTopic.vue'
 import DebateView from '../views/DebateView.vue'
 import UserProfile from '../views/UserProfile.vue'
 import Discover from '../views/Discover.vue'
-import DebateDetail from '../views/DebateDetail.vue'
 
 const routes = [
   {
@@ -29,11 +28,7 @@ const routes = [
     name: 'AddDebateTopic',
     component: AddDebateTopic
   },
-  {
-    path: '/debate-detail',
-    name: 'DebateDetail',
-    component: DebateDetail
-  },
+
   {
     path: '/debate',
     name: 'DebateView',

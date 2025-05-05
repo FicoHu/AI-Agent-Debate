@@ -180,7 +180,7 @@ export default {
       
       // 跳转到辩论详情页面
       this.$router.push({
-        path: '/debate-view',
+        path: '/debate',
         query: { id: topic.id }
       });
     },
@@ -188,7 +188,7 @@ export default {
     goToNextStep() {
       if (this.selectedTopic) {
         this.$router.push({
-          path: '/debate-view',
+          path: '/debate',
           query: { id: this.selectedTopic.id }
         });
       }
