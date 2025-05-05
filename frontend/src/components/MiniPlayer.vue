@@ -73,7 +73,8 @@ export default {
       isPlaying: false,
       audioPlayer: null,
       currentAudioIndex: 0,
-      audioPaths: []
+      audioPaths: [],
+      apiConfig: apiConfig // 将导入的apiConfig添加到数据中
     }
   },
   watch: {
@@ -182,7 +183,8 @@ export default {
         fullPath = audioPath;
       } else {
         // 使用API服务器的URL
-        const apiBaseUrl = 'http://localhost:9000';
+        // 使用API配置中的baseURL
+        const apiBaseUrl = apiConfig.baseURL; // 直接使用导入的apiConfig
         
         if (audioPath.includes('audio_output/')) {
           // 如果已经包含audio_output路径

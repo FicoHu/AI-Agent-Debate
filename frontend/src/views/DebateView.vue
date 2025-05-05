@@ -413,7 +413,7 @@ export default {
         fullPath = audioPath;
       } else {
         // 使用API服务器的URL
-        const apiBaseUrl = 'http://localhost:9000';
+        const apiBaseUrl = apiConfig.baseURL; // 直接使用导入的apiConfig
         
         if (audioPath.includes('audio_output/')) {
           // 如果已经包含audio_output路径
@@ -515,7 +515,8 @@ export default {
     // 保存辩论信息到服务器
     async saveDebateInfo() {
       try {
-        const apiBaseUrl = 'http://localhost:8001';
+        // 使用API配置中的baseURL
+        const apiBaseUrl = apiConfig.baseURL; // 直接使用导入的apiConfig
         
         // 请求保存辩论信息
         const response = await axios.post(`${apiBaseUrl}/debate_view/save`, {
