@@ -26,10 +26,10 @@ fi
 
 # 检查Python服务器是否在运行
 check_python_server() {
-    if ! pgrep -f "python.*server\.py" > /dev/null; then
+    if ! pgrep -f "python.*app\.py" > /dev/null; then
         log "检测到Python服务器未运行，正在启动..."
         cd "$PROJECT_PATH"
-        nohup python3 server.py > "$PROJECT_PATH/server.log" 2>&1 &
+        nohup python3 flask/app.py > "$PROJECT_PATH/server.log" 2>&1 &
         if [ $? -eq 0 ]; then
             log "Python服务器启动成功"
         else
