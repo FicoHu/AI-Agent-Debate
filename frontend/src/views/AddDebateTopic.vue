@@ -90,6 +90,7 @@
 <script>
 import BottomNavBar from '../components/BottomNavBar.vue';
 import axios from 'axios';
+import apiConfig from '../config/api.js';
 
 export default {
   name: 'AddDebateTopicView',
@@ -132,7 +133,7 @@ export default {
       console.log('调用API生成辩论主题:', this.topicInput);
       
       // 发送请求到/api/generate_debate接口
-      axios.post('http://localhost:9000/api/generate_debate', {
+      axios.post(`${apiConfig.baseURL}/api/generate_debate`, {
         url: this.topicInput
       })
       .then(response => {
