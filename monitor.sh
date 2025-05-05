@@ -76,19 +76,10 @@ pull_latest_code() {
     log "正在拉取最新代码..."
     cd "$PROJECT_PATH"
     
-    # 先检查本地有无未提交的更改
+    # 检查本地是否有未提交的更改，如果有，则跳过拉取
     if git status --porcelain | grep -q '^\s*[MADRC]'; then
-        log "发现本地有未提交的更改，尝试自动提交..."
-        git add .
-        git commit -m "Auto commit by monitor script: $(date '+%Y-%m-%d %H:%M:%S')"
-        
-        # 尝试推送到远程仓库
-        git push
-        if [ $? -ne 0 ]; then
-            log "自动提交失败，继续拉取"
-        else
-            log "自动提交成功"
-        fi
+        log "发现本地有未提交的更改，跳过代码拉取"
+        return 0
     fi
     
     # 尝试拉取最新代码
