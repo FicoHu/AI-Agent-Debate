@@ -30,7 +30,7 @@ fi
 # 检查Python服务器是否在运行
 check_python_server() {
     # 使用更精确的模式匹配，包含多种可能的进程名称
-    if ! ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' > /dev/null; then
+    if ! ps aux | grep -E 'python.*app\.py|python3.*app\.py|flask.*app\.py' | grep -v grep > /dev/null; then
         log "检测到Python服务器未运行，正在启动..."
         cd "$PROJECT_PATH"
         # 确保安装了必要的依赖
@@ -45,14 +45,14 @@ check_python_server() {
             nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
         fi
         sleep 2 # 等待服务器启动
-        if ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' > /dev/null; then
+        if ps aux | grep -E 'python.*app\.py|python3.*app\.py|flask.*app\.py' | grep -v grep > /dev/null; then
             log "Python服务器启动成功"
         else
             log "Python服务器启动失败，请查看日志: $PROJECT_PATH/server.log"
         fi
     else
         # 获取并打印Python进程的进程ID
-        PYTHON_PID=$(ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
+        PYTHON_PID=$(ps aux | grep -E 'python.*app\.py|python3.*app\.py|flask.*app\.py' | grep -v grep | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
         log "Python服务器正在运行中，进程ID: $PYTHON_PID"
     fi
 }
@@ -101,7 +101,7 @@ pull_latest_code() {
 check_and_start_dev_server() {
     log "检查npm run dev进程..."
     # 使用更精确的模式匹配，包含多种可能的进程名称
-    if ! ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' > /dev/null; then
+    if ! ps aux | grep -E 'node.*dev|vite|npm.*run.*dev' | grep -v grep > /dev/null; then
         log "npm run dev进程不存在，正在启动..."
         cd "$FRONTEND_PATH"
         # 确保安装了必要的依赖
@@ -109,7 +109,7 @@ check_and_start_dev_server() {
         # 使用nohup启动前端服务器
         nohup npm run dev -- --host > "$PROJECT_PATH/frontend.log" 2>&1 &
         sleep 5 # 等待前端服务器启动
-        if ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' > /dev/null; then
+        if ps aux | grep -E 'node.*dev|vite|npm.*run.*dev' | grep -v grep > /dev/null; then
             log "npm run dev启动成功"
         else
             log "npm run dev启动失败，请查看日志: $PROJECT_PATH/frontend.log"
@@ -117,7 +117,7 @@ check_and_start_dev_server() {
         fi
     else
         # 获取并打印npm进程的进程ID
-        NPM_PID=$(ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
+        NPM_PID=$(ps aux | grep -E 'node.*dev|vite|npm.*run.*dev' | grep -v grep | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
         log "npm run dev进程正在运行中，进程ID: $NPM_PID"
     fi
     return 0
@@ -127,8 +127,8 @@ check_and_start_dev_server() {
 handle_error() {
     log "脚本遇到错误，尝试恢复..."
     # 尝试杀死可能卡住的进程
-    ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' | awk '{print $2}' | xargs kill -9 2>/dev/null || true
-    ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    ps aux | grep -E 'python.*app\.py|python3.*app\.py|flask.*app\.py' | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    ps aux | grep -E 'node.*dev|vite|npm.*run.*dev' | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null || true
     log "清理完成，将重新启动服务"
 }
 
