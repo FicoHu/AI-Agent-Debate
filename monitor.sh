@@ -34,10 +34,16 @@ check_python_server() {
         log "检测到Python服务器未运行，正在启动..."
         cd "$PROJECT_PATH"
         # 确保安装了必要的依赖
-        pip3 install flask flask-cors bs4 requests pillow > /dev/null 2>&1 || pip install flask flask-cors bs4 requests pillow > /dev/null 2>&1
+        pip3 install flask flask-cors bs4 requests pillow > /dev/null 2>&1 || { log "使用pip3失败，尝试pip"; pip install flask flask-cors bs4 requests pillow > /dev/null 2>&1; }
         # 使用绝对路径启动服务器
         # 尝试使用python3，如果失败则使用python
-        nohup python3 "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 & || nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
+        if command -v python3 > /dev/null 2>&1; then
+            log "使用python3启动服务器"
+            nohup python3 "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
+        else
+            log "使用python启动服务器"
+            nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
+        fi
         sleep 2 # 等待服务器启动
         if ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' > /dev/null; then
             log "Python服务器启动成功"
