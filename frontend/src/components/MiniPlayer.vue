@@ -22,7 +22,8 @@
             <path d="M298.666667 213.333333h170.666666v597.333334H298.666667z m256 0h170.666666v597.333334h-170.666666z" fill="currentColor"/>
           </svg>
         </div>
-        <div class="test-button" @click="testAudio" title="测试音频">
+        <!-- 测试按钮已隐藏 -->
+        <div v-if="false" class="test-button" @click="testAudio" title="测试音频">
           <span>测试</span>
         </div>
         <div class="close-button" @click="close">
@@ -98,6 +99,19 @@ export default {
     this.stopAudio();
   },
   methods: {
+    // 立即开始播放音频
+    startPlayingImmediately() {
+      console.log('立即开始播放音频');
+      // 准备音频列表
+      this.prepareAudioList();
+      // 如果有音频路径，则开始播放
+      if (this.audioPaths && this.audioPaths.length > 0) {
+        this.currentAudioIndex = 0;
+        this.playCurrentAudio();
+        this.isPlaying = true;
+      }
+    },
+    
     // 测试音频播放
     testAudio() {
       console.log('测试音频播放');
@@ -139,57 +153,68 @@ export default {
       }
     },
     togglePlay() {
-      this.isPlaying = !this.isPlaying;
-      
       if (this.isPlaying) {
-        this.playAudio();
-      } else {
         this.pauseAudio();
+      } else {
+        this.playCurrentAudio();
       }
-      
-      this.$emit('toggle-play', this.isPlaying);
+      this.isPlaying = !this.isPlaying;
     },
-    playAudio() {
-      if (this.audioPaths.length === 0) {
-        console.warn('没有可播放的音频');
+    playCurrentAudio() {
+      if (this.audioPaths && this.audioPaths.length > 0 && this.currentAudioIndex < this.audioPaths.length) {
+        const audioPath = this.audioPaths[this.currentAudioIndex];
+        this.playAudio(audioPath);
+      }
+    },
+    playAudio(audioPath) {
+      if (!audioPath) {
+        console.warn('没有指定音频路径');
         return;
       }
       
-      if (!this.audioPlayer) {
-        const audioPath = this.audioPaths[this.currentAudioIndex];
-        // 将相对路径改造成HTTP路径进行播放
-        let fullPath;
-        if (audioPath.startsWith('http')) {
-          // 已经是HTTP路径，直接使用
-          fullPath = audioPath;
+      // 停止当前正在播放的音频
+      this.stopAudio();
+      
+      // 将相对路径改造成HTTP路径进行播放
+      let fullPath;
+      if (audioPath.startsWith('http')) {
+        // 已经是HTTP路径，直接使用
+        fullPath = audioPath;
+      } else {
+        // 使用API服务器的URL
+        const apiBaseUrl = 'http://localhost:9000';
+        
+        if (audioPath.includes('audio_output/')) {
+          // 如果已经包含audio_output路径
+          fullPath = `${apiBaseUrl}/${audioPath}`;
         } else {
-          // 提取文件名
+          // 如果只是文件名，构建完整路径
           const fileName = audioPath.split('/').pop();
-          // 构建完整的HTTP URL，使用前端服务器的URL
-          const baseUrl = window.location.origin; // 如http://localhost:3001
-          fullPath = `${baseUrl}/audio_output/${fileName}`;
+          fullPath = `${apiBaseUrl}/audio_output/${fileName}`;
         }
         
-        console.log('构建的音频URL:', fullPath);
-        this.audioPlayer = new Audio(fullPath);
-        
-        // 设置音频播放速率
-        this.audioPlayer.playbackRate = 1.5;
-        
-        // 音频播放完成后的处理
-        this.audioPlayer.onended = () => {
-          console.log('当前音频播放完成');
-          // 播放下一个音频
-          this.playNextAudio();
-        };
-        
-        // 音频加载错误处理
-        this.audioPlayer.onerror = (e) => {
-          console.error('音频加载错误:', e);
-          // 尝试播放下一个音频
-          this.playNextAudio();
-        };
+        console.log('音频文件路径:', fullPath);
       }
+      
+      console.log('构建的音频URL:', fullPath);
+      this.audioPlayer = new Audio(fullPath);
+      
+      // 设置音频播放速率
+      this.audioPlayer.playbackRate = 1.5;
+      
+      // 音频播放完成后的处理
+      this.audioPlayer.onended = () => {
+        console.log('当前音频播放完成');
+        // 播放下一个音频
+        this.playNextAudio();
+      };
+      
+      // 音频加载错误处理
+      this.audioPlayer.onerror = (e) => {
+        console.error('音频加载错误:', e);
+        // 尝试播放下一个音频
+        this.playNextAudio();
+      };
       
       // 播放音频
       this.audioPlayer.play().catch(error => {
@@ -218,7 +243,9 @@ export default {
       
       // 如果还有下一个音频，则播放
       if (this.currentAudioIndex < this.audioPaths.length) {
-        this.playAudio();
+        // 播放下一个音频
+        const nextAudioPath = this.audioPaths[this.currentAudioIndex];
+        this.playAudio(nextAudioPath);
       } else {
         // 所有音频播放完毕
         this.currentAudioIndex = 0;

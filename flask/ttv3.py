@@ -37,8 +37,12 @@ def base64_to_mp3(base64_str: str,
         # 解码Base64字符串
         audio_data = base64.b64decode(base64_str)
 
+        # 使用项目根目录下的audio_output目录
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        abs_output_dir = os.path.join(root_dir, output_dir)
+        
         # 创建输出目录
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(abs_output_dir, exist_ok=True)
 
         # 生成唯一文件名（如果未指定）
         if not filename:
@@ -46,13 +50,18 @@ def base64_to_mp3(base64_str: str,
         elif not filename.endswith(".mp3"):
             filename += ".mp3"
 
-        file_path = os.path.join(output_dir, filename)
+        # 生成绝对路径
+        abs_file_path = os.path.join(abs_output_dir, filename)
+        
+        # 生成相对路径（用于返回）
+        rel_file_path = os.path.join(output_dir, filename)
 
         # 写入MP3文件
-        with open(file_path, "wb") as f:
+        with open(abs_file_path, "wb") as f:
             f.write(audio_data)
-        # return os.path.abspath(file_path)
-        return file_path
+            
+        # 返回相对路径，以便前端使用
+        return rel_file_path
 
     except base64.binascii.Error as e:
         raise ValueError("无效的Base64字符串") from e

@@ -143,11 +143,12 @@ export default {
         if (response.data) {
           // 提取新闻大纲
           const topic = response.data.topic;
+          const outline = response.data.outline || '';
           const proArgument = response.data.pros.argument;
           const conArgument = response.data.cons.argument;
           
-          // 生成新闻大纲
-          this.newsOutline = `根据您提供的URL内容，我们提取到以下辩论主题：\n\n主题：${topic}\n\n正方立场：${proArgument}\n\n反方立场：${conArgument}`;
+          // 显示新闻大纲，直接使用API返回的outline字段
+          this.newsOutline = outline;
           
           // 生成辩论主题
           this.generatedTopics = [

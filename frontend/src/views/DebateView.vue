@@ -2,7 +2,7 @@
   <div class="debate-container">
     <!-- 辩论主题 -->
     <div class="debate-header">
-      <h1 class="debate-title">辩论主题</h1>
+      <h1 class="debate-title">主题</h1>
       <div class="debate-topic">{{ debateInfo.topic.title }}</div>
       
       <div class="teams-info">
@@ -406,10 +406,24 @@ export default {
       
       // 处理音频路径，确保使用正确的路径
       // 如果路径已经是完整URL，则直接使用
-      // 否则，将其作为相对路径处理
-      const fullPath = audioPath.startsWith('http') 
-        ? audioPath 
-        : `/${audioPath}`; // 使用相对于公共目录的路径
+      // 否则，使用后端服务器的URL来访问音频文件
+      let fullPath;
+      if (audioPath.startsWith('http')) {
+        // 已经是HTTP路径，直接使用
+        fullPath = audioPath;
+      } else {
+        // 使用API服务器的URL
+        const apiBaseUrl = 'http://localhost:9000';
+        
+        if (audioPath.includes('audio_output/')) {
+          // 如果已经包含audio_output路径
+          fullPath = `${apiBaseUrl}/${audioPath}`;
+        } else {
+          // 如果只是文件名，构建完整路径
+          const fileName = audioPath.split('/').pop();
+          fullPath = `${apiBaseUrl}/audio_output/${fileName}`;
+        }
+      }
       
       console.log('播放音频:', fullPath);
       

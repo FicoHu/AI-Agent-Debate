@@ -34,6 +34,7 @@
 </main>
     
     <MiniPlayer 
+      ref="miniPlayer"
       :isVisible="showMiniPlayer" 
       :title="currentDebate.title" 
       :subtitle="currentDebate.source"
@@ -121,6 +122,14 @@ viewDebate(debate) {
       // 显示迷你播放器
       this.showMiniPlayer = true;
       console.log('播放辩论:', debate.title, '音频数据:', debate.originalData?.rounds);
+      
+      // 使用$nextTick确保迷你播放器已经渲染完成
+      this.$nextTick(() => {
+        // 通过引用调用迷你播放器的播放方法
+        if (this.$refs.miniPlayer) {
+          this.$refs.miniPlayer.startPlayingImmediately();
+        }
+      });
     },
     
     closeMiniPlayer() {
