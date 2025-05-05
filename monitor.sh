@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# chmod +x monitor.sh
+# nohup ./monitor.sh > monitor_output.log 2>&1 &
 # 项目路径
 # 根据实际情况设置项目路径
 PROJECT_PATH="$(cd "$(dirname "$0")" && pwd)"
