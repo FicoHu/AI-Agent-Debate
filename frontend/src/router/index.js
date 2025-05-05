@@ -3,10 +3,10 @@ import Login from '../views/Login.vue'
 import OtherLogin from '../views/OtherLogin.vue'
 import HotDebates from '../views/HotDebates.vue'
 import AddDebateTopic from '../views/AddDebateTopic.vue'
-import AddDebateDetail from '../views/AddDebateDetail.vue'
 import DebateView from '../views/DebateView.vue'
 import UserProfile from '../views/UserProfile.vue'
 import Discover from '../views/Discover.vue'
+import DebateDetail from '../views/DebateDetail.vue'
 
 const routes = [
   {
@@ -30,9 +30,9 @@ const routes = [
     component: AddDebateTopic
   },
   {
-    path: '/add-debate-detail',
-    name: 'AddDebateDetail',
-    component: AddDebateDetail
+    path: '/debate-detail',
+    name: 'DebateDetail',
+    component: DebateDetail
   },
   {
     path: '/debate',
