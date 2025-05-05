@@ -1,5 +1,5 @@
 // API配置文件
-const isDevelopment =false;
+const isDevelopment =true;
 
 // 根据环境选择不同的API基础URL
 const API_BASE_URL = isDevelopment 
@@ -12,6 +12,7 @@ export default {
   // API端点
   endpoints: {
     debates: '/api/debates',
+    debateDetail: '/api/debate',
     // 可以添加其他API端点
   },
   

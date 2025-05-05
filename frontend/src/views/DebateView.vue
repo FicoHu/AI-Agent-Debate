@@ -30,9 +30,26 @@
     
     <!-- 辩论内容 -->
     <div class="debate-content">
-      <div class="debate-status">辩论中</div>
+      <div class="debate-status">
+        <span v-if="debateStarted">辩论中</span>
+        <span v-else>辩论准备就绪</span>
+        <!-- 控制按钮区域 -->
+        <div class="controls">
+          <!-- 开始按钮 -->
+          <button @click="startDebate" class="start-btn" v-if="!debateStarted">
+            <i class="start-icon">&#9658;</i> 开始辩论
+          </button>
+          <!-- 音频控制按钮 -->
+          <div class="audio-controls" v-if="debateStarted">
+            <button @click="toggleAudio" class="audio-btn" :class="{'muted': isMuted}">
+              <i class="audio-icon" v-if="isMuted">&#128263;</i>
+              <i class="audio-icon" v-else>&#128266;</i>
+            </button>
+          </div>
+        </div>
+      </div>
       
-      <div class="chat-container">
+      <div class="chat-container" ref="chatContainer">
         <!-- 动态显示辩论内容 -->
         <template v-for="(message, index) in messages.slice(0, currentRound)" :key="index">
           <!-- 蓝队消息 -->
@@ -82,6 +99,7 @@
 <script>
 import BottomNavBar from '../components/BottomNavBar.vue';
 import axios from 'axios';
+import apiConfig from '../config/api';
 
 export default {
   name: 'DebateView',
@@ -145,8 +163,14 @@ export default {
           typingIndex: 0
         }
       ],
-      typingSpeed: 50, // 打字速度，毫秒/字符
-      activeMessageIndex: 0 // 当前正在打字的消息索引
+      typingSpeed: 200, // 打字速度，毫秒/字符（比原来慢2倍）
+      activeMessageIndex: 0, // 当前正在打字的消息索引
+      audioPlayer: null, // 音频播放器
+      isMuted: false, // 是否静音
+      audioInitialized: false, // 音频是否已初始化
+      audioFinished: true, // 音频是否播放完成
+      textFinished: true, // 文字是否显示完成
+      debateStarted: false // 辩论是否已开始
     }
   },
   created() {
@@ -159,10 +183,15 @@ export default {
     // 初始化辩论内容
     this.initializeDebate();
     
-    // 启动打字机效果
-    this.startTypingEffect();
+    // 不自动启动打字机效果，等待用户点击开始按钮
   },
   methods: {
+    // 开始辩论
+    startDebate() {
+      this.debateStarted = true;
+      // 启动打字机效果
+      this.startTypingEffect();
+    },
     initializeDebate() {
       // 先从本地存储获取辩论信息
       const savedDebateInfo = localStorage.getItem('debateInfo');
@@ -188,27 +217,52 @@ export default {
     // 从 API 获取辩论数据
     async fetchDebateData() {
       try {
-        // API基础URL，生产环境中应该使用实际的后端地址
-        const apiBaseUrl = 'http://localhost:8001';
+        // 从URL获取辩论ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const debateId = urlParams.get('id');
         
-        // 请求辩论视图数据
-        const response = await axios.get(`${apiBaseUrl}/debate_view/data`);
+        if (!debateId) {
+          console.error('未找到辩论ID');
+          return;
+        }
         
-        if (response.data) {
-          // 更新辩论信息
-          this.debateInfo = response.data.debateInfo || this.debateInfo;
-          this.debateRounds = response.data.debateRounds || this.debateRounds;
-          this.currentRound = response.data.currentRound || this.currentRound;
+        // 请求辩论详情数据
+        const response = await axios.get(`${apiConfig.getUrl(apiConfig.endpoints.debateDetail)}?debate_id=${debateId}`);
+        
+        if (response.data && response.data.code === 200) {
+          const debateData = response.data.data;
           
-          // 更新消息列表
-          if (response.data.messages && response.data.messages.length > 0) {
-            this.messages = response.data.messages;
+          // 更新辩论信息
+          this.debateInfo = {
+            topic: { id: debateData.id, title: debateData.topic, description: '' },
+            selectedTeam: 'blue',
+            blueStance: debateData.pros.argument,
+            redStance: debateData.cons.argument,
+            bluePlayerType: debateData.pros.team,
+            redPlayerType: debateData.cons.team,
+            useVoice: true
+          };
+          
+          // 如果API返回了rounds数据，则将其转换为消息列表
+          if (debateData.rounds && debateData.rounds.length > 0) {
+            this.messages = debateData.rounds.map(round => ({
+              type: this.mapRoundTypeToMessageType(round.type),
+              content: round.msg,
+              audioPath: round.path,
+              displayContent: '',
+              isTyping: false,
+              typingIndex: 0
+            }));
+            
+            // 更新当前轮次为消息总数
+            this.currentRound = this.messages.length;
+            this.debateRounds = Math.max(this.debateRounds, this.messages.length);
           }
           
           // 保存辩论信息到本地存储
           localStorage.setItem('debateInfo', JSON.stringify(this.debateInfo));
           
-          console.log('辩论数据获取成功', response.data);
+          console.log('辩论数据获取成功', debateData);
         }
       } catch (error) {
         console.error('获取辩论数据失败:', error);
@@ -219,6 +273,7 @@ export default {
         }
       }
     },
+    
     // 启动打字机效果
     startTypingEffect() {
       // 重置所有消息的显示状态
@@ -237,12 +292,26 @@ export default {
     typeNextMessage() {
       // 如果所有消息都已经处理完毕，则返回
       if (this.activeMessageIndex >= Math.min(this.currentRound, this.messages.length)) {
+        // 所有消息处理完毕，停止音频播放
+        this.stopAudio();
         return;
       }
+      
+      // 重置状态
+      this.audioFinished = false;
+      this.textFinished = false;
       
       // 获取当前消息
       const message = this.messages[this.activeMessageIndex];
       message.isTyping = true;
+      
+      // 如果有音频路径，则播放音频
+      if (message.audioPath && !this.isMuted) {
+        this.playAudio(message.audioPath);
+      } else {
+        // 如果没有音频或者静音，标记音频已完成
+        this.audioFinished = true;
+      }
       
       // 开始打字效果
       this.typeMessage(message);
@@ -254,11 +323,14 @@ export default {
       if (message.typingIndex >= message.content.length) {
         message.isTyping = false;
         
-        // 延迟一段时间后显示下一条消息
-        setTimeout(() => {
-          this.activeMessageIndex++;
-          this.typeNextMessage();
-        }, 500);
+        // 滚动到消息底部
+        this.scrollToLatestMessage();
+        
+        // 标记文字已完成
+        this.textFinished = true;
+        
+        // 检查是否可以进行下一条消息
+        this.checkNextMessage();
         
         return;
       }
@@ -267,10 +339,143 @@ export default {
       message.displayContent += message.content.charAt(message.typingIndex);
       message.typingIndex++;
       
+      // 每添加几个字符滚动一次，使页面滚动更平滑
+      if (message.typingIndex % 5 === 0) {
+        this.scrollToLatestMessage();
+      }
+      
       // 设置下一个字符的延迟
       setTimeout(() => {
         this.typeMessage(message);
       }, this.typingSpeed);
+    },
+    
+    // 检查是否可以进行下一条消息
+    checkNextMessage() {
+      // 如果文字和音频都已完成，或者静音状态下文字已完成
+      if ((this.textFinished && this.audioFinished) || (this.textFinished && this.isMuted)) {
+        // 延迟一段时间后显示下一条消息
+        setTimeout(() => {
+          // 当前消息播放完毕，准备下一条消息
+          this.stopAudio(); // 停止当前音频
+          this.activeMessageIndex++;
+          this.typeNextMessage();
+        }, 500);
+      }
+    },
+    
+    // 滚动到最新消息
+    scrollToLatestMessage() {
+      this.$nextTick(() => {
+        const chatContainer = this.$refs.chatContainer;
+        if (chatContainer) {
+          // 查找所有消息元素
+          const messageElements = chatContainer.querySelectorAll('.chat-message');
+          // 过滤出实际可见的消息（即有内容的消息）
+          const visibleMessages = Array.from(messageElements).filter(el => {
+            // 检查是否有显示内容
+            const content = el.querySelector('.message-bubble');
+            return content && content.textContent.trim().length > 0;
+          });
+          
+          if (visibleMessages.length > 0) {
+            // 滚动到最后一条可见消息
+            const latestMessage = visibleMessages[visibleMessages.length - 1];
+            latestMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          } else {
+            // 如果没有找到消息元素，直接滚动到容器底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+          }
+        }
+      });
+    },
+    
+    // 播放音频
+    playAudio(audioPath) {
+      // 如果静音，则不播放音频
+      if (this.isMuted) {
+        this.audioFinished = true;
+        return;
+      }
+      
+      // 重置音频完成状态
+      this.audioFinished = false;
+      
+      // 停止之前的音频
+      this.stopAudio();
+      
+      // 处理音频路径，确保使用正确的路径
+      // 如果路径已经是完整URL，则直接使用
+      // 否则，将其作为相对路径处理
+      const fullPath = audioPath.startsWith('http') 
+        ? audioPath 
+        : `/${audioPath}`; // 使用相对于公共目录的路径
+      
+      console.log('播放音频:', fullPath);
+      
+      // 创建新的音频对象
+      this.audioPlayer = new Audio(fullPath);
+      
+      // 设置音频属性
+      this.audioPlayer.volume = 1.0;
+      // 设置播放速率为2倍速
+      this.audioPlayer.playbackRate = 1.5;
+      
+      // 添加音频事件监听
+      this.audioPlayer.onended = () => {
+        console.log('音频播放完成');
+        // 标记音频已完成
+        this.audioFinished = true;
+        // 检查是否可以进行下一条消息
+        this.checkNextMessage();
+      };
+      
+      this.audioPlayer.onerror = (e) => {
+        console.error('音频加载错误:', e);
+        // 音频加载错误时，标记音频已完成，以便继续下一条消息
+        this.audioFinished = true;
+        this.checkNextMessage();
+      };
+      
+      // 播放音频
+      this.audioPlayer.play().catch(error => {
+        console.error('音频播放失败:', error, fullPath);
+        // 如果是由于浏览器策略导致的错误，则标记音频未初始化
+        if (error.name === 'NotAllowedError') {
+          this.audioInitialized = false;
+        }
+        // 音频播放失败时，标记音频已完成，以便继续下一条消息
+        this.audioFinished = true;
+        this.checkNextMessage();
+      });
+    },
+    
+    // 切换音频状态
+    toggleAudio() {
+      this.isMuted = !this.isMuted;
+      
+      if (this.isMuted) {
+        // 如果静音，停止当前音频
+        this.stopAudio();
+      } else {
+        // 如果取消静音，并且有活动消息，则播放当前消息的音频
+        const currentMessage = this.messages[this.activeMessageIndex];
+        if (currentMessage && currentMessage.audioPath) {
+          this.playAudio(currentMessage.audioPath);
+        }
+        
+        // 标记音频已初始化（用户交互已完成）
+        this.audioInitialized = true;
+      }
+    },
+    
+    // 停止音频播放
+    stopAudio() {
+      if (this.audioPlayer) {
+        this.audioPlayer.pause();
+        this.audioPlayer.currentTime = 0;
+        this.audioPlayer = null;
+      }
     },
     
     goBack() {
@@ -281,6 +486,16 @@ export default {
     },
     navigateTo(path) {
       this.$router.push(path);
+    },
+    
+    // 将API返回的round类型映射到消息类型
+    mapRoundTypeToMessageType(roundType) {
+      const typeMap = {
+        'emcee': 'host',  // 主持人
+        'pro': 'blue',    // 正方/蓝队
+        'con': 'red'      // 反方/红队
+      };
+      return typeMap[roundType] || 'host';
     },
     
     // 保存辩论信息到服务器
@@ -392,6 +607,73 @@ export default {
   top: 0;
   z-index: 10;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+}
+
+.start-btn {
+  background-color: #07c160;
+  color: white;
+  border: none;
+  border-radius: 18px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 15px;
+  font-size: 14px;
+}
+
+.start-btn:hover {
+  background-color: #06b057;
+}
+
+.start-icon {
+  margin-right: 5px;
+  font-style: normal;
+}
+
+.audio-btn {
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  margin-left: 10px;
+}
+
+.audio-btn.muted {
+  background-color: #e0e0e0;
+}
+
+.audio-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.audio-icon {
+  font-size: 18px;
+  color: #333;
+  font-style: normal;
 }
 
 .chat-container {

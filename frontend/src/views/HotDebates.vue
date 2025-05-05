@@ -2,7 +2,7 @@
   <div class="hot-debates-container">
     <header class="header">
       <div class="placeholder"></div>
-      <h1>热点辩论</h1>
+      <h1>热点话题</h1>
       <div class="add-button" @click="addNewDebate">
         <span>+</span>
       </div>
@@ -37,6 +37,7 @@
       :isVisible="showMiniPlayer" 
       :title="currentDebate.title" 
       :subtitle="currentDebate.source"
+      :debateData="currentDebate"
       @close="closeMiniPlayer"
       @toggle-play="togglePlay"
     />
@@ -99,7 +100,7 @@ created() {
 viewDebate(debate) {
   console.log('查看辩论:', debate);
   // 跳转到辩论详情页面，并传递辩论ID
-  this.$router.push(`/debate?debate_id=${debate.id}`);
+  this.$router.push(`/debate?id=${debate.id}`);
 },
     addNewDebate() {
       // 跳转到添加辩论话题页面
@@ -115,8 +116,11 @@ viewDebate(debate) {
     },
     
     playDebate(debate) {
+      // 设置当前辩论数据
       this.currentDebate = debate;
+      // 显示迷你播放器
       this.showMiniPlayer = true;
+      console.log('播放辩论:', debate.title, '音频数据:', debate.originalData?.rounds);
     },
     
     closeMiniPlayer() {
@@ -125,6 +129,7 @@ viewDebate(debate) {
     
     togglePlay(isPlaying) {
       console.log('播放状态:', isPlaying ? '播放中' : '已暂停');
+      // 可以在这里添加播放状态的其他处理逻辑
     }
   }
 }
