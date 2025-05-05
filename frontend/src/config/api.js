@@ -1,5 +1,5 @@
 // API配置文件
-const isDevelopment =true;
+const isDevelopment =false;
 
 // 根据环境选择不同的API基础URL
 const API_BASE_URL = isDevelopment 
