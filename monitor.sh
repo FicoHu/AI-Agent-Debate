@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # 项目路径
-PROJECT_PATH="/root/AI-Agent-Debate"
+# 根据实际情况设置项目路径
+PROJECT_PATH="$(cd "$(dirname "$0")" && pwd)"
+# 如果在服务器上运行，可以手动设置为固定路径
+# PROJECT_PATH="/root/AI-Agent-Debate"
 FRONTEND_PATH="$PROJECT_PATH/frontend"
 LOG_FILE="$PROJECT_PATH/monitor.log"
 
@@ -27,21 +30,24 @@ fi
 # 检查Python服务器是否在运行
 check_python_server() {
     # 使用更精确的模式匹配，包含多种可能的进程名称
-    if ! ps aux | grep -E '[python.*app\.py|[python3.*app\.py|[f]lask.*app\.py' > /dev/null; then
+    if ! ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' > /dev/null; then
         log "检测到Python服务器未运行，正在启动..."
         cd "$PROJECT_PATH"
         # 确保安装了必要的依赖
-        pip3 install flask flask-cors bs4 requests > /dev/null 2>&1
+        pip3 install flask flask-cors bs4 requests pillow > /dev/null 2>&1 || pip install flask flask-cors bs4 requests pillow > /dev/null 2>&1
         # 使用绝对路径启动服务器
-        nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
+        # 尝试使用python3，如果失败则使用python
+        nohup python3 "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 & || nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
         sleep 2 # 等待服务器启动
-        if ps aux | grep -E '[python.*app\.py|[python3.*app\.py|[f]lask.*app\.py' > /dev/null; then
+        if ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' > /dev/null; then
             log "Python服务器启动成功"
         else
             log "Python服务器启动失败，请查看日志: $PROJECT_PATH/server.log"
         fi
     else
-        log "Python服务器正在运行中"
+        # 获取并打印Python进程的进程ID
+        PYTHON_PID=$(ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
+        log "Python服务器正在运行中，进程ID: $PYTHON_PID"
     fi
 }
 
@@ -49,12 +55,39 @@ check_python_server() {
 pull_latest_code() {
     log "正在拉取最新代码..."
     cd "$PROJECT_PATH"
+    
+    # 先检查本地有无未提交的更改
+    if git status --porcelain | grep -q '^\s*[MADRC]'; then
+        log "发现本地有未提交的更改，尝试自动提交..."
+        git add .
+        git commit -m "Auto commit by monitor script: $(date '+%Y-%m-%d %H:%M:%S')"
+        
+        # 尝试推送到远程仓库
+        git push
+        if [ $? -ne 0 ]; then
+            log "自动提交失败，继续拉取"
+        else
+            log "自动提交成功"
+        fi
+    fi
+    
+    # 尝试拉取最新代码
     git pull
     if [ $? -ne 0 ]; then
-        log "拉取代码失败"
-        return 1
+        log "拉取代码失败，尝试重置本地更改..."
+        # 如果拉取失败，尝试强制重置
+        git fetch origin
+        git reset --hard origin/main
+        if [ $? -ne 0 ]; then
+            log "重置失败，请手动检查仓库状态"
+            return 1
+        else
+            log "重置成功，现在代码与远程仓库一致"
+        fi
+    else
+        log "代码拉取成功"
     fi
-    log "代码拉取成功"
+    
     return 0
 }
 
@@ -77,16 +110,34 @@ check_and_start_dev_server() {
             return 1
         fi
     else
-        log "npm run dev进程正在运行中"
+        # 获取并打印npm进程的进程ID
+        NPM_PID=$(ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
+        log "npm run dev进程正在运行中，进程ID: $NPM_PID"
     fi
     return 0
 }
+
+# 添加错误处理函数
+handle_error() {
+    log "脚本遇到错误，尝试恢复..."
+    # 尝试杀死可能卡住的进程
+    ps aux | grep -E '[p]ython.*app\.py|[p]ython3.*app\.py|[f]lask.*app\.py' | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    log "清理完成，将重新启动服务"
+}
+
+# 添加信号处理
+trap 'handle_error' ERR
+trap 'log "脚本收到终止信号，正在清理并退出..."; exit 0' SIGINT SIGTERM
+
+# 初始化日志
+log "监控脚本启动于 $(date '+%Y-%m-%d %H:%M:%S')"
 
 # 主循环
 while true; do
     pull_latest_code
     check_python_server      # 检查Python服务器是否在运行
     check_and_start_dev_server
-    log "等待1分钟后再次检查..."
+    log "服务检查完成，等待1分钟后再次检查..."
     sleep 60
 done
