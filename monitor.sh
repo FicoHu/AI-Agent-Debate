@@ -26,15 +26,22 @@ fi
 
 # 检查Python服务器是否在运行
 check_python_server() {
-    if ! pgrep -f "python.*app\.py" > /dev/null; then
+    # 使用更精确的模式匹配，包含多种可能的进程名称
+    if ! ps aux | grep -E '[python.*app\.py|[python3.*app\.py|[f]lask.*app\.py' > /dev/null; then
         log "检测到Python服务器未运行，正在启动..."
         cd "$PROJECT_PATH"
-        nohup python3 flask/app.py > "$PROJECT_PATH/server.log" 2>&1 &
-        if [ $? -eq 0 ]; then
+        # 确保安装了必要的依赖
+        pip3 install flask flask-cors bs4 requests > /dev/null 2>&1
+        # 使用绝对路径启动服务器
+        nohup python "$PROJECT_PATH/flask/app.py" > "$PROJECT_PATH/server.log" 2>&1 &
+        sleep 2 # 等待服务器启动
+        if ps aux | grep -E '[python.*app\.py|[python3.*app\.py|[f]lask.*app\.py' > /dev/null; then
             log "Python服务器启动成功"
         else
-            log "Python服务器启动失败"
+            log "Python服务器启动失败，请查看日志: $PROJECT_PATH/server.log"
         fi
+    else
+        log "Python服务器正在运行中"
     fi
 }
 
@@ -54,17 +61,23 @@ pull_latest_code() {
 # 检查npm run dev进程
 check_and_start_dev_server() {
     log "检查npm run dev进程..."
-    if ! pgrep -f "node.*dev" > /dev/null; then
+    # 使用更精确的模式匹配，包含多种可能的进程名称
+    if ! ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' > /dev/null; then
         log "npm run dev进程不存在，正在启动..."
         cd "$FRONTEND_PATH"
-        nohup npm run dev -- --host > frontend.log 2>&1 &
-        if [ $? -ne 0 ]; then
-            log "启动npm run dev失败"
+        # 确保安装了必要的依赖
+        npm install > /dev/null 2>&1
+        # 使用nohup启动前端服务器
+        nohup npm run dev -- --host > "$PROJECT_PATH/frontend.log" 2>&1 &
+        sleep 5 # 等待前端服务器启动
+        if ps aux | grep -E '[n]ode.*dev|[v]ite|[n]pm.*run.*dev' > /dev/null; then
+            log "npm run dev启动成功"
+        else
+            log "npm run dev启动失败，请查看日志: $PROJECT_PATH/frontend.log"
             return 1
         fi
-        log "npm run dev启动成功，进程ID: $(pgrep -f 'node.*dev')"
     else
-        log "npm run dev进程正在运行，进程ID: $(pgrep -f 'node.*dev')"
+        log "npm run dev进程正在运行中"
     fi
     return 0
 }
