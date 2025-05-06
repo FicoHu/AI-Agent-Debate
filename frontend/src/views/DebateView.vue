@@ -2,30 +2,41 @@
   <div class="debate-container">
     <!-- 辩论主题 -->
     <div class="debate-header">
-      <h1 class="debate-title">主题</h1>
-      <div class="debate-topic">{{ debateInfo.topic.title }}</div>
-      
-      <div class="teams-info">
-        <div class="team blue-team">
-          <div class="team-name">蓝队</div>
-          <div class="team-stance">
-            <span class="stance-label"><i class="stance-icon">&#9733;</i></span>
-            <span class="stance-value">{{ debateInfo.blueStance }}</span>
-          </div>
-          <div class="player-type">选手: {{ debateInfo.bluePlayerType }}</div>
+      <div class="debate-poster">
+        <!-- 如果有海报图片则显示 -->
+        <div v-if="debateInfo.poster" class="poster-image-container">
+          <img :src="debateInfo.poster" alt="辩论海报" class="poster-image">
         </div>
-        
-        <div class="team red-team">
-          <div class="team-name">红队</div>
-          <div class="team-stance">
-            <span class="stance-label"><i class="stance-icon">&#9733;</i></span>
-            <span class="stance-value">{{ debateInfo.redStance }}</span>
+        <!-- 没有海报图片时显示默认设计 -->
+        <div v-else class="poster-content">
+          <h1 class="debate-title">辩题</h1>
+          <div class="debate-topic">{{ debateInfo.topic.title }}</div>
+          
+          <div class="poster-vs">
+            <div class="poster-team blue-side">
+              <div class="poster-stance">{{ debateInfo.blueStance }}</div>
+              <div class="poster-player">{{ debateInfo.bluePlayerType }}</div>
+            </div>
+            <div class="vs-circle">VS</div>
+            <div class="poster-team red-side">
+              <div class="poster-stance">{{ debateInfo.redStance }}</div>
+              <div class="poster-player">{{ debateInfo.redPlayerType }}</div>
+            </div>
           </div>
-          <div class="player-type">选手: {{ debateInfo.redPlayerType }}</div>
         </div>
       </div>
       
-     
+      <!-- 正反方信息简洁展示 -->
+      <div class="stance-summary">
+        <div class="stance-item blue-stance">
+          <span class="stance-label">正方：</span>
+          <span class="stance-text">{{ debateInfo.blueStance }}</span>
+        </div>
+        <div class="stance-item red-stance">
+          <span class="stance-label">反方</span>
+          <span class="stance-text">{{ debateInfo.redStance }}</span>
+        </div>
+      </div>
     </div>
     
     <!-- 辩论内容 -->
@@ -240,7 +251,8 @@ export default {
             redStance: debateData.cons.argument,
             bluePlayerType: debateData.pros.team,
             redPlayerType: debateData.cons.team,
-            useVoice: true
+            useVoice: true,
+            poster: debateData.poster || null // 添加海报字段
           };
           
           // 如果API返回了rounds数据，则将其转换为消息列表
@@ -561,26 +573,152 @@ export default {
   margin: 15px 15px 0;
 }
 
+/* 海报样式 */
+.debate-poster {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #4a7bff 0%, #ff4a4a 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.poster-image-container {
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+  position: relative;
+}
+
+.poster-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.poster-content {
+  padding: 20px;
+  text-align: center;
+  color: white;
+}
+
 .debate-title {
   font-size: 16px;
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .debate-topic {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.poster-vs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 15px 0;
+  position: relative;
+}
+
+.poster-team {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+}
+
+.blue-side {
+  background-color: rgba(74, 123, 255, 0.3);
+  border-radius: 8px 0 0 8px;
+}
+
+.red-side {
+  background-color: rgba(255, 74, 74, 0.3);
+  border-radius: 0 8px 8px 0;
+}
+
+.vs-circle {
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  color: #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.poster-stance {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.poster-player {
   font-size: 14px;
-  line-height: 1.5;
+  opacity: 0.9;
+}
+
+/* 正反方简洁展示样式 */
+.stance-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  padding: 0 10px;
+}
+
+.stance-item {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.blue-stance {
+  background-color: rgba(74, 123, 255, 0.1);
+  margin-right: 5px;
+}
+
+.red-stance {
+  background-color: rgba(255, 74, 74, 0.1);
+  margin-left: 5px;
+}
+
+.stance-label {
+  font-size: 12px;
+  font-weight: bold;
   color: #666;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f5f5f5;
+  margin-bottom: 5px;
+}
+
+.stance-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  text-align: center;
 }
 
 .teams-info {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
+  margin-top: 15px;
 }
 
 .team {
